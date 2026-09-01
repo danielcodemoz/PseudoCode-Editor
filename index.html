@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Editor de Pseudocódigo · Daniel Marcos Labs</title>
+  <meta name="description" content="Editor de pseudocódigo em português para ensino (Willow / 2.º e 3.º ciclo)." />
+  <style>
+    :root {
+      --bg: #0B1220;
+      --text: #E8EEF7;
+      --muted: #9AA8BC;
+      --accent: #D4AF37;
+      --accent-dim: rgba(212, 175, 55, 0.16);
+      --card: #121A2B;
+      --line: rgba(232, 238, 247, 0.08);
+      --danger: #E26D7A;
+      --ok: #6FCF97;
+      --gutter: #8A97AB;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .site-header, .site-footer { padding: 1rem 1.25rem; }
+    .site-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 1rem;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(212,175,55,0.06), transparent);
+    }
+    .brand { font-weight: 700; color: var(--text); text-decoration: none; }
+    .brand:hover { color: var(--accent); text-decoration: none; }
+    .brand span { color: var(--accent); }
+    .tag { color: var(--muted); font-size: 0.85rem; }
+    main { width: min(1100px, calc(100% - 2rem)); margin: 1.25rem auto 2rem; flex: 1; }
+    h1 { font-size: 1.5rem; margin: 0 0 0.3rem; }
+    .lead { color: var(--muted); margin: 0 0 1rem; }
+    .kw {
+      display: inline-block;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.78rem;
+      background: var(--accent-dim);
+      color: var(--accent);
+      border-radius: 999px;
+      padding: 0.12rem 0.5rem;
+      margin: 0.12rem 0.15rem 0.12rem 0;
+    }
+    .bar { display: flex; flex-wrap: wrap; gap: 0.45rem; margin: 0.8rem 0; align-items: center; }
+    button, select {
+      font: inherit;
+      cursor: pointer;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      padding: 0.55rem 0.9rem;
+      background: transparent;
+      color: var(--text);
+      font-weight: 600;
+    }
+    .btn-gold { background: var(--accent); color: #0B1220; border-color: transparent; }
+    .btn-gold:hover { filter: brightness(1.08); }
+    button:hover, select:hover { border-color: var(--accent); }
+    .grid {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 0.85rem;
+    }
+    @media (max-width: 860px) {
+      .grid { grid-template-columns: 1fr; }
+      .site-header { flex-direction: column; }
+    }
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+      min-height: 420px;
+      display: flex;
+      flex-direction: column;
+    }
+    .panel h2 {
+      margin: 0;
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 0.65rem 0.85rem;
+      border-bottom: 1px solid var(--line);
+    }
+    .editor {
+      display: grid;
+      grid-template-columns: 3rem 1fr;
+      flex: 1;
+      min-height: 360px;
+    }
+    #gutter, #code {
+      margin: 0;
+      border: 0;
+      padding: 0.75rem 0.55rem;
+      font: 0.92rem/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      white-space: pre;
+      overflow: auto;
+    }
+    #gutter {
+      background: #0E1628;
+      color: var(--gutter);
+      text-align: right;
+      user-select: none;
+    }
+    #code {
+      background: transparent;
+      color: var(--text);
+      resize: none;
+      outline: none;
+      width: 100%;
+      tab-size: 2;
+    }
+    #out, #stdin {
+      flex: 1;
+      margin: 0;
+      padding: 0.75rem 0.9rem;
+      font: 0.92rem/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      white-space: pre-wrap;
+      overflow: auto;
+    }
+    #out.err { color: var(--danger); }
+    #out.ok { color: var(--ok); }
+    label.small { color: var(--muted); font-size: 0.8rem; padding: 0.4rem 0.9rem 0; }
+    #stdin {
+      flex: 0 0 auto;
+      min-height: 4.2rem;
+      max-height: 8rem;
+      background: #0B1220;
+      color: var(--text);
+      border: 0;
+      border-top: 1px solid var(--line);
+      resize: vertical;
+    }
+    .site-footer {
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 0.88rem;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="https://danielpro.dev">Daniel Marcos <span>· Labs</span></a>
+    <span class="tag">Pseudocódigo · Willow</span>
+  </header>
+  <main>
+    <h1>Editor de pseudocódigo</h1>
+    <p class="lead">Ambiente mínimo para o ensino (2.º/3.º ciclo e Willow Coding Club). Palavras-chave em português. O interpretador é pequeno e <strong>não</strong> executa JavaScript.</p>
+    <div>
+      <span class="kw">se</span><span class="kw">senão</span><span class="kw">para</span><span class="kw">enquanto</span>
+      <span class="kw">escrever</span><span class="kw">ler</span><span class="kw">inteiro</span>
+    </div>
+    <div class="bar">
+      <button class="btn-gold" type="button" id="run">Correr</button>
+      <button type="button" id="clear-out">Limpar saída</button>
+      <label>
+        Exemplos
+        <select id="samples" aria-label="Programas de exemplo">
+          <option value="">— escolher —</option>
+          <option value="ola">Olá, Willow</option>
+          <option value="contar">Contar até 5</option>
+          <option value="par">Par ou ímpar</option>
+          <option value="tabuada">Tabuada do 3</option>
+          <option value="soma">Soma com se</option>
+        </select>
+      </label>
+    </div>
+    <div class="grid">
+      <section class="panel">
+        <h2>Programa</h2>
+        <div class="editor">
+          <pre id="gutter">1</pre>
+          <textarea id="code" spellcheck="false" aria-label="Pseudocódigo">escrever "Olá, Willow!"
+escrever "Vamos contar:"
+inteiro i
+para i de 1 até 5 faça
+  escrever i
+fimpara
+</textarea>
+        </div>
+      </section>
+      <section class="panel">
+        <h2>Saída</h2>
+        <pre id="out"></pre>
+        <label class="small" for="stdin">Entrada para <span class="kw">ler</span> (uma linha por valor)</label>
+        <textarea id="stdin" placeholder="valores para ler…"></textarea>
+      </section>
+    </div>
+  </main>
+  <footer class="site-footer">
+    Projecto de Daniel Marcos · Portfólio: <a href="https://danielpro.dev">danielpro.dev</a> · Código: <a href="https://github.com/danielcodemoz/PseudoCode-Editor">este repositório no GitHub</a>
+  </footer>
+  <script>
+(function () {
+  const KEYWORDS = {
+    se:1, senao:1, para:1, enquanto:1, escrever:1, ler:1, inteiro:1,
+    entao:1, faca:1, fimse:1, fimpara:1, fimenquanto:1, de:1, ate:1,
+    e:1, ou:1, nao:1, verdadeiro:1, falso:1
+  };
+  const SAMPLES = {
+    ola: 'escrever "Olá, Willow!"\nescrever "Este é um programa em pseudocódigo."\n',
+    contar: 'inteiro i\npara i de 1 até 5 faça\n  escrever i\nfimpara\n',
+    par: 'inteiro n\nn <- 7\nse n % 2 == 0 então\n  escrever n\n  escrever "é par"\nsenão\n  escrever n\n  escrever "é ímpar"\nfimse\n',
+    tabuada: 'inteiro i\npara i de 1 até 10 faça\n  escrever "3 x " + i + " = " + (3 * i)\nfimpara\n',
+    soma: 'inteiro a\ninteiro b\na <- 4\nb <- 9\nescrever "soma = " + (a + b)\nse a + b > 10 então\n  escrever "é maior do que 10"\nsenão\n  escrever "não é maior do que 10"\nfimse\n'
+  };
+
+  function fold(s) {
+    return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  }
+
+  function tokenize(src) {
+    const tokens = [];
+    let i = 0, line = 1, col = 1;
+    const push = (type, value, l, c) => tokens.push({ type, value, line: l, col: c });
+    while (i < src.length) {
+      const ch = src[i];
+      if (ch === " " || ch === "\t" || ch === "\r") { i++; col++; continue; }
+      if (ch === "\n") { push("NL", "\n", line, col); i++; line++; col = 1; continue; }
+      if (ch === "#" || (ch === "/" && src[i+1] === "/")) {
+        while (i < src.length && src[i] !== "\n") { i++; }
+        continue;
+      }
+      const sl = line, sc = col;
+      if (ch === '"') {
+        i++; col++;
+        let s = "";
+        while (i < src.length && src[i] !== '"' && src[i] !== "\n") {
+          if (src[i] === "\\" && i+1 < src.length) { s += src[i+1]; i += 2; col += 2; }
+          else { s += src[i]; i++; col++; }
+        }
+        if (src[i] === '"') { i++; col++; }
+        push("STR", s, sl, sc);
+        continue;
+      }
+      if (/[0-9]/.test(ch)) {
+        let n = "";
+        while (i < src.length && /[0-9]/.test(src[i])) { n += src[i]; i++; col++; }
+        push("NUM", Number(n), sl, sc);
+        continue;
+      }
+      if (/[A-Za-zÀ-ÿ_]/.test(ch)) {
+        let w = "";
+        while (i < src.length && /[A-Za-zÀ-ÿ0-9_]/.test(src[i])) { w += src[i]; i++; col++; }
+        const k = fold(w);
+        if (KEYWORDS[k]) push("KW", k, sl, sc);
+        else push("ID", w, sl, sc);
+        continue;
+      }
+      const two = src.slice(i, i+2);
+      if (two === "<-" || two === "==" || two === "!=" || two === "<=" || two === ">=") {
+        push("OP", two, sl, sc); i += 2; col += 2; continue;
+      }
+      if ("=<>+-*/%(),".indexOf(ch) >= 0) {
+        push("OP", ch, sl, sc); i++; col++; continue;
+      }
+      throw new Error("Carácter inesperado '" + ch + "' na linha " + line);
+    }
+    push("EOF", "", line, col);
+    return tokens;
+  }
+
+  function Parser(tokens) {
+    this.t = tokens;
+    this.p = 0;
+  }
+  Parser.prototype.peek = function () { return this.t[this.p]; };
+  Parser.prototype.at = function (type, value) {
+    const k = this.peek();
+    return k.type === type && (value === undefined || k.value === value);
+  };
+  Parser.prototype.eat = function (type, value) {
+    const k = this.peek();
+    if (k.type !== type || (value !== undefined && k.value !== value)) {
+      throw new Error("Na linha " + k.line + ": esperado " + (value || type));
+    }
+    this.p++;
+    return k;
+  };
+  Parser.prototype.skipNL = function () { while (this.at("NL")) this.p++; };
+  Parser.prototype.stmtEnd = function () { if (this.at("NL")) this.p++; };
+
+  Parser.prototype.program = function () {
+    const body = [];
+    this.skipNL();
+    while (!this.at("EOF")) {
+      body.push(this.stmt());
+      this.skipNL();
+    }
+    return { type: "prog", body };
+  };
+  Parser.prototype.stmt = function () {
+    if (this.at("KW", "escrever")) return this.stmtEscrever();
+    if (this.at("KW", "ler")) return this.stmtLer();
+    if (this.at("KW", "inteiro")) return this.stmtInteiro();
+    if (this.at("KW", "se")) return this.stmtSe();
+    if (this.at("KW", "para")) return this.stmtPara();
+    if (this.at("KW", "enquanto")) return this.stmtEnquanto();
+    if (this.at("ID")) return this.stmtAssign();
+    const k = this.peek();
+    throw new Error("Na linha " + k.line + ": instrução inválida");
+  };
+  Parser.prototype.stmtEscrever = function () {
+    const k = this.eat("KW", "escrever");
+    const args = [this.expr()];
+    while (this.at("OP", ",")) { this.eat("OP", ","); args.push(this.expr()); }
+    this.stmtEnd();
+    return { type: "escrever", args, line: k.line };
+  };
+  Parser.prototype.stmtLer = function () {
+    const k = this.eat("KW", "ler");
+    const id = this.eat("ID").value;
+    this.stmtEnd();
+    return { type: "ler", id, line: k.line };
+  };
+  Parser.prototype.stmtInteiro = function () {
+    const k = this.eat("KW", "inteiro");
+    const ids = [this.eat("ID").value];
+    while (this.at("OP", ",")) { this.eat("OP", ","); ids.push(this.eat("ID").value); }
+    this.stmtEnd();
+    return { type: "inteiro", ids, line: k.line };
+  };
+  Parser.prototype.stmtAssign = function () {
+    const id = this.eat("ID");
+    if (this.at("OP", "<-")) this.eat("OP", "<-");
+    else this.eat("OP", "=");
+    const value = this.expr();
+    this.stmtEnd();
+    return { type: "assign", id: id.value, value, line: id.line };
+  };
+  Parser.prototype.blockUntil = function (ends) {
+    const body = [];
+    this.skipNL();
+    while (!this.at("EOF") && !(this.peek().type === "KW" && ends.indexOf(this.peek().value) >= 0)) {
+      body.push(this.stmt());
+      this.skipNL();
+    }
+    return body;
+  };
+  Parser.prototype.stmtSe = function () {
+    const k = this.eat("KW", "se");
+    const cond = this.expr();
+    if (this.at("KW", "entao")) this.eat("KW", "entao");
+    this.skipNL();
+    const thenB = this.blockUntil(["senao", "fimse"]);
+    let elseB = [];
+    if (this.at("KW", "senao")) {
+      this.eat("KW", "senao");
+      this.skipNL();
+      elseB = this.blockUntil(["fimse"]);
+    }
+    this.eat("KW", "fimse");
+    this.stmtEnd();
+    return { type: "se", cond, thenB, elseB, line: k.line };
+  };
+  Parser.prototype.stmtPara = function () {
+    const k = this.eat("KW", "para");
+    const id = this.eat("ID").value;
+    this.eat("KW", "de");
+    const from = this.expr();
+    this.eat("KW", "ate");
+    const to = this.expr();
+    if (this.at("KW", "faca")) this.eat("KW", "faca");
+    this.skipNL();
+    const body = this.blockUntil(["fimpara"]);
+    this.eat("KW", "fimpara");
+    this.stmtEnd();
+    return { type: "para", id, from, to, body, line: k.line };
+  };
+  Parser.prototype.stmtEnquanto = function () {
+    const k = this.eat("KW", "enquanto");
+    const cond = this.expr();
+    if (this.at("KW", "faca")) this.eat("KW", "faca");
+    this.skipNL();
+    const body = this.blockUntil(["fimenquanto"]);
+    this.eat("KW", "fimenquanto");
+    this.stmtEnd();
+    return { type: "enquanto", cond, body, line: k.line };
+  };
+  Parser.prototype.expr = function () { return this.orx(); };
+  Parser.prototype.orx = function () {
+    let left = this.andx();
+    while (this.at("KW", "ou")) {
+      this.eat("KW", "ou");
+      left = { type: "binop", op: "ou", left, right: this.andx() };
+    }
+    return left;
+  };
+  Parser.prototype.andx = function () {
+    let left = this.cmp();
+    while (this.at("KW", "e")) {
+      this.eat("KW", "e");
+      left = { type: "binop", op: "e", left, right: this.cmp() };
+    }
+    return left;
+  };
+  Parser.prototype.cmp = function () {
+    let left = this.add();
+    const k = this.peek();
+    if (k.type === "OP" && (k.value === "==" || k.value === "!=" || k.value === "<" || k.value === ">" || k.value === "<=" || k.value === ">=" || k.value === "=")) {
+      this.p++;
+      const op = k.value === "=" ? "==" : k.value;
+      left = { type: "binop", op, left, right: this.add() };
+    }
+    return left;
+  };
+  Parser.prototype.add = function () {
+    let left = this.mul();
+    while (this.at("OP", "+") || this.at("OP", "-")) {
+      const op = this.peek().value; this.p++;
+      left = { type: "binop", op, left, right: this.mul() };
+    }
+    return left;
+  };
+  Parser.prototype.mul = function () {
+    let left = this.unary();
+    while (this.at("OP", "*") || this.at("OP", "/") || this.at("OP", "%")) {
+      const op = this.peek().value; this.p++;
+      left = { type: "binop", op, left, right: this.unary() };
+    }
+    return left;
+  };
+  Parser.prototype.unary = function () {
+    if (this.at("KW", "nao") || this.at("OP", "-")) {
+      const op = this.peek().value; this.p++;
+      return { type: "unary", op, expr: this.unary() };
+    }
+    return this.primary();
+  };
+  Parser.prototype.primary = function () {
+    if (this.at("NUM")) return { type: "num", value: this.eat("NUM").value };
+    if (this.at("STR")) return { type: "str", value: this.eat("STR").value };
+    if (this.at("KW", "verdadeiro")) { this.p++; return { type: "num", value: 1 }; }
+    if (this.at("KW", "falso")) { this.p++; return { type: "num", value: 0 }; }
+    if (this.at("ID")) return { type: "var", name: this.eat("ID").value };
+    if (this.at("OP", "(")) {
+      this.eat("OP", "(");
+      const e = this.expr();
+      this.eat("OP", ")");
+      return e;
+    }
+    const k = this.peek();
+    throw new Error("Na linha " + k.line + ": expressão inválida");
+  };
+
+  function truthy(v) {
+    if (typeof v === "number") return v !== 0;
+    return String(v).length > 0;
+  }
+  function num(v, line) {
+    if (typeof v === "number") return v;
+    const n = Number(v);
+    if (Number.isNaN(n)) throw new Error("Na linha " + line + ": esperado um número, veio \"" + v + "\"");
+    return n;
+  }
+
+  function run(ast, inputText) {
+    const env = Object.create(null);
+    const out = [];
+    const inputs = String(inputText || "").split(/\r?\n/);
+    let ip = 0;
+    let steps = 0;
+    const MAX = 20000;
+    function step() {
+      if (++steps > MAX) throw new Error("Programa parado: demasiados passos (possível ciclo infinito).");
+    }
+    function ev(node, line) {
+      step();
+      switch (node.type) {
+        case "num": return node.value;
+        case "str": return node.value;
+        case "var":
+          if (!(node.name in env)) throw new Error("Na linha " + line + ": variável '" + node.name + "' não definida");
+          return env[node.name];
+        case "unary": {
+          const v = ev(node.expr, line);
+          if (node.op === "nao") return truthy(v) ? 0 : 1;
+          return -num(v, line);
+        }
+        case "binop": {
+          const a = ev(node.left, line);
+          const b = ev(node.right, line);
+          const op = node.op;
+          if (op === "+") {
+            if (typeof a === "string" || typeof b === "string") return String(a) + String(b);
+            return num(a, line) + num(b, line);
+          }
+          if (op === "-") return num(a, line) - num(b, line);
+          if (op === "*") return num(a, line) * num(b, line);
+          if (op === "/") {
+            const d = num(b, line);
+            if (d === 0) throw new Error("Na linha " + line + ": divisão por zero");
+            return Math.trunc(num(a, line) / d);
+          }
+          if (op === "%") {
+            const d = num(b, line);
+            if (d === 0) throw new Error("Na linha " + line + ": divisão por zero");
+            return num(a, line) % d;
+          }
+          if (op === "e") return (truthy(a) && truthy(b)) ? 1 : 0;
+          if (op === "ou") return (truthy(a) || truthy(b)) ? 1 : 0;
+          if (op === "==") return a == b ? 1 : 0;
+          if (op === "!=") return a != b ? 1 : 0;
+          if (op === "<") return num(a, line) < num(b, line) ? 1 : 0;
+          if (op === ">") return num(a, line) > num(b, line) ? 1 : 0;
+          if (op === "<=") return num(a, line) <= num(b, line) ? 1 : 0;
+          if (op === ">=") return num(a, line) >= num(b, line) ? 1 : 0;
+          throw new Error("Operador desconhecido");
+        }
+        default: throw new Error("Nó inválido");
+      }
+    }
+    function exec(list) {
+      for (let i = 0; i < list.length; i++) exec1(list[i]);
+    }
+    function exec1(s) {
+      step();
+      switch (s.type) {
+        case "escrever":
+          out.push(s.args.map(function (a) { return String(ev(a, s.line)); }).join(" "));
+          if (out.join("\n").length > 50000) throw new Error("Saída demasiado longa.");
+          break;
+        case "ler": {
+          if (ip >= inputs.length) throw new Error("Na linha " + s.line + ": não há mais valores em Entrada para ler");
+          let raw = inputs[ip++];
+          const n = Number(raw);
+          env[s.id] = (raw !== "" && !Number.isNaN(n) && /^-?\d+$/.test(String(raw).trim())) ? n : raw;
+          break;
+        }
+        case "inteiro":
+          s.ids.forEach(function (id) { if (!(id in env)) env[id] = 0; });
+          break;
+        case "assign":
+          env[s.id] = ev(s.value, s.line);
+          break;
+        case "se":
+          exec(truthy(ev(s.cond, s.line)) ? s.thenB : s.elseB);
+          break;
+        case "para": {
+          let a = num(ev(s.from, s.line), s.line);
+          const b = num(ev(s.to, s.line), s.line);
+          const dir = a <= b ? 1 : -1;
+          for (env[s.id] = a; dir > 0 ? env[s.id] <= b : env[s.id] >= b; env[s.id] += dir) {
+            exec(s.body);
+          }
+          break;
+        }
+        case "enquanto":
+          while (truthy(ev(s.cond, s.line))) exec(s.body);
+          break;
+        default: throw new Error("Instrução desconhecida");
+      }
+    }
+    exec(ast.body);
+    return out.join("\n");
+  }
+
+  const code = document.getElementById("code");
+  const gutter = document.getElementById("gutter");
+  const out = document.getElementById("out");
+  function updateGutter() {
+    const n = code.value.split("\n").length;
+    let s = "";
+    for (let i = 1; i <= n; i++) s += i + (i < n ? "\n" : "");
+    gutter.textContent = s;
+  }
+  function syncScroll() { gutter.scrollTop = code.scrollTop; }
+  code.addEventListener("input", updateGutter);
+  code.addEventListener("scroll", syncScroll);
+  code.addEventListener("keydown", function (e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); go(); }
+    if (e.key === "Tab") {
+      e.preventDefault();
+      const a = code.selectionStart, b = code.selectionEnd;
+      code.value = code.value.slice(0, a) + "  " + code.value.slice(b);
+      code.selectionStart = code.selectionEnd = a + 2;
+      updateGutter();
+    }
+  });
+  updateGutter();
+
+  function go() {
+    out.className = "";
+    out.textContent = "";
+    try {
+      const ast = new Parser(tokenize(code.value)).program();
+      const text = run(ast, document.getElementById("stdin").value);
+      out.textContent = text || "(sem saída)";
+      out.className = "ok";
+    } catch (err) {
+      out.textContent = "Erro: " + (err && err.message ? err.message : String(err));
+      out.className = "err";
+    }
+  }
+  document.getElementById("run").addEventListener("click", go);
+  document.getElementById("clear-out").addEventListener("click", function () {
+    out.textContent = "";
+    out.className = "";
+  });
+  document.getElementById("samples").addEventListener("change", function (e) {
+    const v = e.target.value;
+    if (SAMPLES[v]) { code.value = SAMPLES[v]; updateGutter(); }
+    e.target.value = "";
+  });
+})();
+  </script>
+</body>
+</html>
