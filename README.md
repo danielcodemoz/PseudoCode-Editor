@@ -1,14 +1,19 @@
 # Editor de Pseudocódigo
 
-**Ao vivo:** [https://danielcodemoz.github.io/PseudoCode-Editor/](https://danielcodemoz.github.io/PseudoCode-Editor/)
+Editor de ensino com palavras-chave em português (`se`, `senão`, `para`, `enquanto`, `escrever`, `ler`). O botão Correr interpreta um subconjunto pequeno — sem uso de eval — e corta ciclos infinitos.
 
-Editor de ensino (Willow / 2.º e 3.º ciclo) com palavras-chave em português: `se`, `senão`, `para`, `enquanto`, `escrever`, `ler`, `inteiro`.
+**Demo:** https://danielcodemoz.github.io/PseudoCode-Editor/
 
-O botão **Correr** interpreta um subconjunto pequeno (escrita, variáveis, `se`/`senão`, `para`, `enquanto`) num painel de saída. Não usa `eval` nem executa JavaScript do aluno — o interpretador é próprio, limitado e com corte de ciclos infinitos.
+## Stack
 
-Inclui programas de exemplo e numeração de linhas.
+- HTML, CSS e JavaScript (`index.html`)
 
-- Portfólio: [danielpro.dev](https://danielpro.dev)
-- Código: [github.com/danielcodemoz/PseudoCode-Editor](https://github.com/danielcodemoz/PseudoCode-Editor)
+## Correr localmente
 
-Autor: Daniel Marcos
+Abre `index.html` no browser.
+
+## Autor
+
+Daniel Marcos — consultor de TI em Maputo. Lab público, não é produto de cliente.
+
+https://danielpro.dev
